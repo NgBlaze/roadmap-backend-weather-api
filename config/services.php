@@ -34,5 +34,8 @@ return [
     'api' => [
         'key' => env('WEATHER_API_KEY'),
     ],
+    'geo_code' => [
+        'key' => env('GEO_CODING_API_KEY'),
+    ],
 
 ];

@@ -15,7 +15,7 @@ class WeatherController extends Controller
         $weather_location = $location;
 
         $validator = Validator::make(["location" => $weather_location], [
-            "location" => "string"
+            "location" => "string|alpha"
         ]);
 
         if ($validator->fails()) {
@@ -25,8 +25,21 @@ class WeatherController extends Controller
             ], 422);
         }
 
+        $geo_code_api_key = config('services.geo_code.key');
+
+
+
 
         $api_key = config('services.api.key');
+        $valid_location = Http::get("https://geocode.maps.co/search?q={$weather_location}&api_key={$geo_code_api_key}");
+        $location_data = $valid_location->json();
+
+        if (empty($location_data) || (is_array($location_data) && count($location_data) === 0)) {
+            return response()->json([
+                "status_code" => 400,
+                "message" => "Invalid Location",
+            ], 400);
+        }
 
 
         try {
@@ -44,6 +57,20 @@ class WeatherController extends Controller
                     "status_code" => 429,
                     "message" => "Too many Requests"
                 ], 429);
+            }
+
+            if ($response->failed()) {
+                return response()->json([
+                    "status_code" => 400,
+                    "message" => "Request Failed"
+                ], 400);
+            }
+
+            if ($response->serverError()) {
+                return response()->json([
+                    "status_code" => 500,
+                    "message" => "Server Error",
+                ], 500);
             }
         } catch (\Exception $e) {
             return response()->json([

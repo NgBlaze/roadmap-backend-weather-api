@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -79,12 +80,25 @@ class WeatherController extends Controller
             ], 400);
         }
 
-        return response()->json([
-            "status_code" => 201,
-            "message" => "Weather data retrieved successfully",
-            "data" => [
-                "content" => $response->json()
-            ]
-        ], 201);
+        $redis_key = 'weather' . $weather_location;
+
+        if (Redis::exists($redis_key)) {
+            $cached_weather_data = Redis::get($redis_key);
+            return response()->json([
+                "status_code" => 201,
+                "message" => "Weather data retrieved from cache successfully",
+                "data" => json_decode($cached_weather_data)
+            ], 201);
+        }
+        if ($response->successful()) {
+            Redis::setex($redis_key, 3600, $response->body());
+            return response()->json([
+                "status_code" => 201,
+                "message" => "Weather data retrieved successfully",
+                "data" => [
+                    "content" => $response->json()
+                ]
+            ], 201);
+        }
     }
 }

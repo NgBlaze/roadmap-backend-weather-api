@@ -80,7 +80,7 @@ class WeatherController extends Controller
             ], 400);
         }
 
-        $redis_key = 'weather' . $weather_location;
+        $redis_key = 'weather_' . $weather_location;
 
         if (Redis::exists($redis_key)) {
             $cached_weather_data = Redis::get($redis_key);
